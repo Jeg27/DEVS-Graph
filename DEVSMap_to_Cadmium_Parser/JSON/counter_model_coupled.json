@@ -1,0 +1,39 @@
+{
+  "countermodel": {
+    "x": {},
+    "y": {},
+    "components": [
+      {
+        "model": "generator_bool",
+        "id": "direction_generator"
+      },
+      {
+        "model": "step_generator",
+        "id": "step_gen"
+      },
+      {
+        "model": "counter",
+        "id": "counter_model"
+      }
+    ],
+    "eic": [],
+    "eoc": [],
+    "ic": [
+      {
+        "port_from": "bool_out",
+        "port_to": "direction_in",
+        "component_from": "direction_generator",
+        "component_to": "counter_model"
+      },
+      {
+        "port_from": "step_out",
+        "port_to": "increment_in",
+        "component_from": "step_gen",
+        "component_to": "counter_model"
+      }
+    ]
+  },
+  "include_sets": [
+    "default_sets.json"
+  ]
+}

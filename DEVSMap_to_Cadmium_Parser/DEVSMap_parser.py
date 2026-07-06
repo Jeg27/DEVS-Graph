@@ -73,6 +73,16 @@ def generate_code(JSON):
         data = sort_json_files(DEVSMap) 
         # print("--------DEVSMap--------")
         # print(data)
+        
+
+        dump_dir = "DEVSMap_to_Cadmium_Parser/JSON"
+
+        for filename, content in DEVSMap.items():
+            if filename.endswith(".json"):
+                with open(f"{dump_dir}/{filename}", "w", encoding="utf-8") as f:
+                    json.dump(content, f, indent=2)
+
+        print(f"Saved received JSON files to {dump_dir}")
 
         simulation_time = get_simulation_time_in_seconds(data['experiment'])
         top_model_name = get_top_model_name(data['experiment'])
@@ -91,13 +101,16 @@ def generate_code(JSON):
 
         ef = experiment_data.get("experimental_frame", {})
         is_real_experiment = isinstance(ef, dict) and bool(ef.get("model"))
-
+        print("EF =", ef)
+        print("MODEL =", ef.get("model"))
+        print("TYPE =", type(ef.get("model")))
+        print("real?", isinstance(ef, dict), bool(ef.get("model")))
         # Finally, we can generate the code for the main.cpp file, and each of 
         # the atomic and coupled models.
 
         # Generate the correct main.cpp
         if is_real_experiment:
-
+            print("IT's a REAL EXPERIMENT")
             mut_file = experiment_data["model_under_test"]["model"]
             ef_file = experiment_data["experimental_frame"]["model"]
 
@@ -121,7 +134,7 @@ def generate_code(JSON):
                 )
             )
         else:
-
+            print("sent to regular main.cpp generator",top_model_name, simulation_time)
             code.update(generate_main_cpp(top_model_name, simulation_time))
         
         # Generate the atomic and coupled model HPPs as usual. 

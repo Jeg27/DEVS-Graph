@@ -46,7 +46,7 @@ def generate_coupled_model(directory, coupled_model_name, coupled_model):
     #     file.write(generate_coupled_model_struct(coupled_model_name, coupled_model))
     #     file.write('#endif')
     # file.close()  
-    file_name = coupled_model_name + ".hpp" # may need to add "include/" at the beginning depending on the implementation
+    file_name = coupled_model_name.lower() + ".hpp" # may need to add "include/" at the beginning depending on the implementation
     file_content = generate_file_definition(coupled_model_name)
     file_content += include_cadmium_coupled()
     file_content += include_component_models(coupled_model)
@@ -86,7 +86,7 @@ def include_component_models(coupled_model):
     components = get_components(coupled_model)
     include_statements = ""
     for component in components:
-        include_statements += '#include "' + component["model"] + '.hpp"\n'
+        include_statements += '#include "' + component["model"].lower() + '.hpp"\n'
     include_statements += '\n'
     return include_statements
 

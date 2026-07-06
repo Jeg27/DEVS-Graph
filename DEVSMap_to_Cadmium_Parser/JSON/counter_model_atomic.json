@@ -1,0 +1,56 @@
+{
+  "counter": {
+    "x": {
+      "increment_in": "int",
+      "direction_in": "bool"
+    },
+    "y": {
+      "count_out": "int"
+    },
+    "s": {
+      "sigma": "double",
+      "count": "int",
+      "increment": "int",
+      "countUp": "bool"
+    },
+    "delta_int": {
+      "countUp == true": {
+        "count": "count + increment",
+        "sigma": "inf"
+      },
+      "countUp == false": {
+        "count": "count - increment",
+        "sigma": "inf"
+      },
+      "otherwise": {}
+    },
+    "delta_ext": {
+      "increment_in.bagSize() != 0 && direction_in.bagSize() == 0": {
+        "increment": "increment_in.bag(-1)",
+        "sigma": "0.1"
+      },
+      "direction_in.bagSize() != 0 && increment_in.bagSize() == 0": {
+        "countUp": "direction_in.bag(-1)",
+        "sigma": "0.1"
+      },
+      "otherwise": {
+        "increment": "increment_in.bag(-1)",
+        "countUp": "direction_in.bag(-1)",
+        "sigma": "0.1"
+      }
+    },
+    "delta_con": {},
+    "lambda": {
+      "otherwise": {
+        "count_out": "count"
+      }
+    },
+    "ta": {
+      "otherwise": "sigma"
+    }
+  },
+  "include_sets": [
+    "default_sets.json"
+  ],
+  "parameters": {}
+}

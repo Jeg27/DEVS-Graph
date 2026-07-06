@@ -1,0 +1,31 @@
+{
+  "step_generator": {
+    "x": {},
+    "y": {
+      "step_out": "int"
+    },
+    "s": {
+      "sigma": "double",
+      "step": "int"
+    },
+    "delta_int": {
+      "otherwise": {}
+    },
+    "delta_ext": {
+      "otherwise": {}
+    },
+    "delta_con": {},
+    "lambda": {
+      "otherwise": {
+        "step_out": "step"
+      }
+    },
+    "ta": {
+      "otherwise": "sigma"
+    }
+  },
+  "include_sets": [
+    "default_sets.json"
+  ],
+  "parameters": {}
+}

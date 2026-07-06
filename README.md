@@ -6,6 +6,8 @@ A graphical tool for modelling, simulation, validation, and experimentation of D
 
 ## Repository
 
+https://github.com/murf85/DEVS_Graph_GUI_DataTypes
+Improvements on:
 https://github.com/ucheeaa/DEVS-Graph-GUI
 
 ---
@@ -90,8 +92,8 @@ pip install flask flask-cors
 ### Clone Repository
 
 ```
-git clone https://github.com/ucheeaa/DEVS-Graph-GUI.git
-cd DEVS-Graph-GUI
+git clone https://github.com/murf85/DEVS_Graph_GUI_DataTypes.git
+cd DEVS_Graph_GUI_DataTypes
 ```
 
 ### IMPORTANT: Create Your Own Branch

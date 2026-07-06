@@ -49,6 +49,7 @@ class ParserHandler(BaseHTTPRequestHandler):
             print("Starting generate_code...")
 
             try:
+                
                 cadmiumCode = generate_code(data)
             except Exception as e:
                 print("Error in generate_code:", e)

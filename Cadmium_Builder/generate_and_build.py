@@ -10,8 +10,8 @@ def build_cadmium(code):
     Build and run the Cadmium simulation.
     Works on Windows (via WSL), Linux, and macOS.
     """
-
-    files_dict = json.loads(code)
+    print("ENTERED build_cadmium")
+    files_dict = code if isinstance(code, dict) else json.loads(code)
 
     BASE_DIR = Path(__file__).resolve().parent / "cadmium_project"
     main_dir = BASE_DIR / "main"
@@ -71,7 +71,12 @@ def build_cadmium(code):
     # -----------------------------
     # Build and run commands
     # -----------------------------
-    build_cmd = "source build_sim.sh"
+    csv_path = BASE_DIR / "experiment_log.csv"
+    if csv_path.exists():
+        print("Deleting old CSV:", csv_path)
+        csv_path.unlink()
+
+    build_cmd = ". ./build_sim.sh"
     run_cmd = "./bin/Executable1"
     full_cmd = f"{build_cmd} && {run_cmd}"
 
@@ -96,24 +101,34 @@ def build_cadmium(code):
     output = result.stdout
     errors = result.stderr
 
-    if result.returncode != 0:
-        print("Build failed. Not running stale executable.")
-        print("Errors:\n", errors)
-        return f"Build failed.\n{errors}"
-
-    # -----------------------------
-    # Clean output
-    # -----------------------------
+    # Clean stdout for diagnostics only
     regex = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
-    output = regex.sub('', output)
+    clean_output = regex.sub('', output)
 
     prefixes = ["--", "[", "Compilation"]
-    output = "\n".join(
-        line for line in output.splitlines()
+    clean_output = "\n".join(
+        line for line in clean_output.splitlines()
         if not any(line.startswith(p) for p in prefixes)
     )
 
-    print("Output:\n", output)
+    print("Output:\n", clean_output)
     print("Errors:\n", errors)
 
-    return "sep=;\n" + output
+    if result.returncode != 0:
+        return (
+            "Build/run failed.\n\n"
+            f"STDOUT:\n{clean_output}\n\n"
+            f"STDERR:\n{errors}"
+        )
+
+    # Read the CSV after a successful run
+    csv_path = BASE_DIR / "experiment_log.csv"
+
+    if csv_path.exists():
+        return csv_path.read_text(encoding="utf-8")
+
+    return (
+        "Simulation completed, but experiment_log.csv was not found.\n\n"
+        f"STDOUT:\n{clean_output}\n\n"
+        f"STDERR:\n{errors}"
+    )
