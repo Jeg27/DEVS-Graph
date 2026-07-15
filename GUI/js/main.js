@@ -1321,7 +1321,7 @@ function main(container) {
             condInput.style.width = "80%";
             if (isOtherwise) condInput.disabled = true;
 
-            condInput.addEventListener("input", () => {
+            condInput.addEventListener("focusout", () => {
                 const newCond = condInput.value.trim();
                 if (!newCond || newCond === condition) return;
                 if (deltaIntObj[newCond]) return;
@@ -1416,7 +1416,7 @@ function main(container) {
             condInput.style.width = "80%";
             if (isOtherwise) condInput.disabled = true;
 
-            condInput.addEventListener("input", () => {
+            condInput.addEventListener("focusout", () => {
                 const newCond = condInput.value.trim();
                 if (!newCond || newCond === condition) return;
                 if (deltaExtObj[newCond]) return;
