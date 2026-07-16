@@ -6,9 +6,13 @@ import { exportGraphImage } from './image-utils.js';
 
 import { ConversionManager } from './conversions.js';
 import { shortcuts } from './shortcuts.js';
-import { setupExperimentSidebar } from "./experiment-design.js";
+import { setupExperimentSidebar, setSimulationOutputButtons } from "./experiment-design.js";
 
 window.customDataTypes = window.customDataTypes || [];
+
+document.addEventListener("DOMContentLoaded", () => {
+  setSimulationOutputButtons();
+});
 
 function repairLoadedUserObjects(graph) {
     const model = graph.getModel();
