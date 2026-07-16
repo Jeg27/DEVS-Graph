@@ -40,6 +40,7 @@ export function setupExperimentSidebar(graph) {
   const runExpBtn = document.getElementById("runExperimentBtn");
 
   const clearOutputBtn = document.getElementById("clearOutputBtn");
+  const traceViewerBtn = document.getElementById("traceViewerBtn");
   const exportCsvBtn = document.getElementById("exportCsvBtn");
   const validateBtn = document.getElementById("validateOutputBtn");
   const modeSelect = document.getElementById("validationMode");
@@ -225,6 +226,10 @@ export function setupExperimentSidebar(graph) {
   clearOutputBtn?.addEventListener("click", () => {
     if (out) out.textContent = "";
     setBottomOutputMessage("");
+  });
+
+  traceViewerBtn?.addEventListener("click", () => {
+    window.open("https://devssim.carleton.ca/trace-viewer/index.html", "_blank");
   });
 
   exportCsvBtn?.addEventListener("click", () => {
