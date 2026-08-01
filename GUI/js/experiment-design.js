@@ -27,6 +27,79 @@ function setBottomOutputMessage(text) {
   container.innerHTML = `<pre class="output-box">${escapeHtml(text)}</pre>`;
 }
 
+export function setSimulationOutputButtons() {
+  const clearOutputBtn = document.getElementById("clearOutputBtn");
+  const traceViewerBtn = document.getElementById("traceViewerBtn");
+  const exportCsvBtn = document.getElementById("exportCsvBtn");
+  const validateBtn = document.getElementById("validateOutputBtn");
+  const modeSelect = document.getElementById("validationMode");
+  const fileInput = document.getElementById("fileInput");
+  const out = document.getElementById("experimentOutput");
+ 
+  clearOutputBtn?.addEventListener("click", () => {
+    if (out) out.textContent = "";
+    setBottomOutputMessage("");
+  });
+
+  traceViewerBtn?.addEventListener("click", () => {
+    window.open("https://devssim.carleton.ca/trace-viewer/index.html", "_blank");
+  });
+
+  exportCsvBtn?.addEventListener("click", () => {
+  const csv = window.__LAST_CSV_OUTPUT || "";
+
+  if (!csv.trim()) {
+    alert("No simulation output to export.");
+    return;
+  }
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "simulation_output.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  URL.revokeObjectURL(url);
+  });
+
+  validateBtn?.addEventListener("click", async () => {
+    try {
+      const mode = modeSelect.value;
+
+      if (mode === "file") {
+        fileInput.click();
+
+        fileInput.onchange = async () => {
+          const file = fileInput.files[0];
+          if (!file) return;
+
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("mode", "file");
+          formData.append("tolerance", "0.1");
+
+          setBottomOutputMessage("Running validation...");
+
+          const res = await fetch("http://localhost:8002/validate", {
+            method: "POST",
+            body: formData
+          });
+
+          const result = await res.text();
+          setBottomOutputMessage(result);
+        };
+      }
+    } catch (err) {
+      console.error(err);
+      setBottomOutputMessage("Validation failed: " + err.message);
+    }
+  });
+}
+
 export function setupExperimentSidebar(graph) {
   const cm = new ConversionManager(graph);
 
@@ -39,12 +112,6 @@ export function setupExperimentSidebar(graph) {
   const genExpJsonBtn = document.getElementById("generateExperimentJsonBtn");
   const runExpBtn = document.getElementById("runExperimentBtn");
 
-  const clearOutputBtn = document.getElementById("clearOutputBtn");
-  const exportCsvBtn = document.getElementById("exportCsvBtn");
-  const validateBtn = document.getElementById("validateOutputBtn");
-  const modeSelect = document.getElementById("validationMode");
-  const fileInput = document.getElementById("fileInput");
-  const folderInput = document.getElementById("folderInput");
   const out = document.getElementById("experimentOutput");
 
   const propsTab = document.getElementById("propertiesTab");
@@ -221,66 +288,6 @@ export function setupExperimentSidebar(graph) {
     getEfInitBuilder: editors.getEfInitBuilder
   })
 );
-
-  clearOutputBtn?.addEventListener("click", () => {
-    if (out) out.textContent = "";
-    setBottomOutputMessage("");
-  });
-
-  exportCsvBtn?.addEventListener("click", () => {
-  const csv = window.__LAST_CSV_OUTPUT || "";
-
-  if (!csv.trim()) {
-    alert("No simulation output to export.");
-    return;
-  }
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "simulation_output.csv";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  URL.revokeObjectURL(url);
-  });
-
-validateBtn?.addEventListener("click", async () => {
-  try {
-    const mode = modeSelect.value;
-
-    if (mode === "file") {
-      fileInput.click();
-
-      fileInput.onchange = async () => {
-        const file = fileInput.files[0];
-        if (!file) return;
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("mode", "file");
-        formData.append("tolerance", "0.1");
-
-        setBottomOutputMessage("Running validation...");
-
-        const res = await fetch("http://localhost:8002/validate", {
-          method: "POST",
-          body: formData
-        });
-
-        const result = await res.text();
-        setBottomOutputMessage(result);
-      };
-    }
-
-  } catch (err) {
-    console.error(err);
-    setBottomOutputMessage("Validation failed: " + err.message);
-  }
-});
 
   function getCoupledPortsByUid(uid) {
     const uos = cm.getUserObjects();

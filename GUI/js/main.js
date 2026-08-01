@@ -6,9 +6,13 @@ import { exportGraphImage } from './image-utils.js';
 
 import { ConversionManager } from './conversions.js';
 import { shortcuts } from './shortcuts.js';
-import { setupExperimentSidebar } from "./experiment-design.js";
+import { setupExperimentSidebar, setSimulationOutputButtons } from "./experiment-design.js";
 
 window.customDataTypes = window.customDataTypes || [];
+
+document.addEventListener("DOMContentLoaded", () => {
+  setSimulationOutputButtons();
+});
 
 function repairLoadedUserObjects(graph) {
     const model = graph.getModel();
@@ -1321,7 +1325,7 @@ function main(container) {
             condInput.style.width = "80%";
             if (isOtherwise) condInput.disabled = true;
 
-            condInput.addEventListener("input", () => {
+            condInput.addEventListener("focusout", () => {
                 const newCond = condInput.value.trim();
                 if (!newCond || newCond === condition) return;
                 if (deltaIntObj[newCond]) return;
@@ -1416,7 +1420,7 @@ function main(container) {
             condInput.style.width = "80%";
             if (isOtherwise) condInput.disabled = true;
 
-            condInput.addEventListener("input", () => {
+            condInput.addEventListener("focusout", () => {
                 const newCond = condInput.value.trim();
                 if (!newCond || newCond === condition) return;
                 if (deltaExtObj[newCond]) return;

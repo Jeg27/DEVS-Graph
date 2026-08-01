@@ -23,6 +23,25 @@ def prefix_states(text, list_of_state_variables):
 import re
 
 
+def normalize_string_literal(value):
+    """
+    Convert DEVSMap string literals into valid C++ string literals.
+    Supports both single-quoted values and already double-quoted values.
+    """
+    if not isinstance(value, str):
+        return value
+
+    stripped = value.strip()
+    if len(stripped) >= 2 and stripped[0] == stripped[-1] and stripped[0] == '"':
+        return stripped
+
+    if len(stripped) >= 2 and stripped[0] == stripped[-1] and stripped[0] == "'":
+        inner = stripped[1:-1]
+        return f'"{inner}"'
+
+    return value
+
+
 def prefix_states(text, list_of_state_variables):
     """
     Prefix bare state variable names with 'state.' but do not
@@ -107,7 +126,8 @@ def simple_conditional_statement(key, value):
         key (str):      The state variable being assigned.
         value (str):    The value to assign to the state variable.
     '''
-    return '\t\t' + key + ' = ' + value + ';\n'
+    normalized_value = normalize_string_literal(value)
+    return '\t\t' + key + ' = ' + normalized_value + ';\n'
 
 """
 # Recursive function to write conditional blocks based on nested JSON structure
@@ -193,11 +213,13 @@ def build_conditional_statements_helper(data, indent=2):
         if isinstance(value, dict):
             if all(not isinstance(v, dict) for v in value.values()):
                 for var, expr in value.items():
-                    conditions += INDENT * (indent + 1) + f'{var} = {expr};\n'
+                    normalized_expr = normalize_string_literal(expr)
+                    conditions += INDENT * (indent + 1) + f'{var} = {normalized_expr};\n'
             else:
                 conditions += build_conditional_statements_helper(value, indent + 1)
         else:
-            conditions += INDENT * (indent + 1) + f'{key} = {value};\n'
+            normalized_value = normalize_string_literal(value)
+            conditions += INDENT * (indent + 1) + f'{key} = {normalized_value};\n'
 
         conditions += INDENT * indent + '}\n'
 
