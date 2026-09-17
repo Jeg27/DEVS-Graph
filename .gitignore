@@ -29,3 +29,5 @@ js/i18n.js
 # Generated binaries/logs
 **/bin/
 **/*.log
+
+.venv/
