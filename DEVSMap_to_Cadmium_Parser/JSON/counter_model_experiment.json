@@ -1,0 +1,11 @@
+{
+  "model_under_test": {
+    "model": "counter_model_coupled.json",
+    "initial_state": "counter_model_init_state.json",
+    "parameters": ""
+  },
+  "experimental_frame": {},
+  "cpic": {},
+  "pocc": {},
+  "time_span": "123"
+}

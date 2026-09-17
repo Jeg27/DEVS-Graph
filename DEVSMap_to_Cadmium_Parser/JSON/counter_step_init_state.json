@@ -1,0 +1,16 @@
+{
+  "init_states": {
+    "counter_step": {
+      "counter_model": {
+        "sigma": "inf",
+        "count": "0",
+        "increment": "1",
+        "countUp": "true"
+      },
+      "direction_generator": {
+        "sigma": "13",
+        "nextBool": "false"
+      }
+    }
+  }
+}

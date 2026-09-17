@@ -49,20 +49,11 @@ class CadmiumHandler(BaseHTTPRequestHandler):
             print("Starting Cadmium build...")
 
             try:
-                # Run build + simulation
-                build_cadmium(data)
+                print("ABOUT TO CALL build_cadmium")
+                print("data type =", type(data))
+                print("data keys =", data.keys() if isinstance(data, dict) else "not dict")
 
-                # Build absolute path from this server.py location
-                base_dir = os.path.dirname(os.path.abspath(__file__))
-                csv_path = os.path.join(base_dir, "cadmium_project", "experiment_log.csv")
-
-                print("Looking for CSV at:", csv_path)
-
-                if not os.path.exists(csv_path):
-                    raise FileNotFoundError(f"CSV not found at: {csv_path}")
-
-                with open(csv_path, "r", encoding="utf-8") as f:
-                    simulation_output = f.read()
+                simulation_output = build_cadmium(data)
 
             except Exception as e:
                 print("Error during build_cadmium:", e)

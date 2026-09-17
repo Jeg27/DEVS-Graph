@@ -1,6 +1,65 @@
+function repairLoadedUserObjects(graph) {
+    const model = graph.getModel();
+
+    function xmlObjectToPlain(obj) {
+        if (!obj) return obj;
+
+        if (obj.nodeType === 1) {
+            const out = {};
+
+            for (let i = 0; i < obj.attributes.length; i++) {
+                const attr = obj.attributes[i];
+                if (attr.name !== "as") {
+                    out[attr.name] = attr.value;
+                }
+            }
+
+            for (let i = 0; i < obj.children.length; i++) {
+                const child = obj.children[i];
+                const key = child.getAttribute("as") || child.tagName;
+
+                if (child.tagName === "Array") {
+                    out[key] = Array.from(child.children).map(grandchild => {
+                        if (grandchild.tagName === "add") {
+                            return grandchild.getAttribute("value");
+                        }
+                        return xmlObjectToPlain(grandchild);
+                    });
+                } else {
+                    out[key] = xmlObjectToPlain(child);
+                }
+            }
+
+            return out;
+        }
+
+        return obj;
+    }
+
+    function walk(cell) {
+        if (!cell) return;
+
+        if (cell.value && cell.value.nodeType === 1) {
+            const valueNode = cell.value;
+            const userObjectNode = Array.from(valueNode.children || [])
+                .find(ch => ch.getAttribute?.("as") === "userObject");
+
+            if (userObjectNode) {
+                cell.userObject = xmlObjectToPlain(userObjectNode);
+            }
+        }
+
+        const childCount = model.getChildCount(cell);
+        for (let i = 0; i < childCount; i++) {
+            walk(model.getChildAt(cell, i));
+        }
+    }
+
+    walk(model.getRoot());
+}
 export class ConversionManager {
 
-
+    
     constructor(graph) {
         this.graph = graph;
     }
@@ -33,7 +92,7 @@ export class ConversionManager {
 
         URL.revokeObjectURL(link.href);
     }
-
+    
 
     // TODO this must be updated once the final structure is determined
     // Loads a DEVS Graph from an XML-formatted file for local save/load functionality
@@ -63,10 +122,13 @@ export class ConversionManager {
                     this.graph.getModel().beginUpdate();
                     try {
                         decoder.decode(xmlDoc.documentElement, this.graph.getModel());
+                 
+                        repairLoadedUserObjects(graph);
+                        
                     } finally {
                         this.graph.getModel().endUpdate(); // triggers redraw
                     }
-
+                    this.graph.refresh();
                     console.log('Graph loaded successfully.');
                 } catch (err) {
                     console.error('Failed to load graph: ', err);
@@ -77,7 +139,7 @@ export class ConversionManager {
         input.click();
     }
 
-
+    
     // Gets a list of the JSON user objects of each cell on the graph (Not DEVSMap representations)
     getUserObjects() {
         // Encode graph to XML
@@ -388,14 +450,28 @@ export class ConversionManager {
 
     // Logs the DEVSMap representation of the DEVS Graph to the browser console
     previewDEVSMap() {
-        console.log(this.getDEVSMap());
+        const devsMap = this.getDEVSMap();
+        console.log(devsMap);
+
+        window.__LAST_DEVS_MAP = devsMap;
+
+        window.showBottomSimulationOutput?.(
+            JSON.stringify(devsMap, null, 2)
+        );
     }
 
 
-    // Takes the DEVSMap representation of the DEVS Graph, sends it to the 
-    // DEVSMap_to_Cadmium_Parser module, and logs the resulting Cadmium Code 
-    // to the browser console.
+    // Takes the DEVSMap representation of the DEVS Graph, sends it to the
+    // DEVSMap_to_Cadmium_Parser module, displays the resulting Cadmium code,
+    // then sends that code bundle to the Cadmium_Builder module so the files
+    // are actually written into the Cadmium project and compiled.
     async previewCadmiumCode() {
+        return await this.buildCadmiumCode();
+    }
+
+
+    async buildCadmiumCode() {
+        console.log("CADMIUM CODE path");
         const logDEVSMap = false;
         const logCadmiumCode = true;
 
@@ -405,8 +481,33 @@ export class ConversionManager {
             console.log("DEVSMap:", DEVSMap);
         }
 
-        // HTTP Calls 
+        window.showBottomSimulationOutput?.("Sending DEVSMap to parser...");
+
         const codeResult = await this.generateCode(DEVSMap, logCadmiumCode);
+
+        if (!codeResult) {
+            window.showBottomSimulationOutput?.("Parser returned no response.");
+            return;
+        }
+
+        if (codeResult.error) {
+            console.error("Parser error:", codeResult.error);
+            window.showBottomSimulationOutput?.("Parser error: " + codeResult.error);
+            return;
+        }
+
+        window.__LAST_CADMIUM_CODE = codeResult;
+
+        // IMPORTANT: Do not call the builder/simulation endpoint here.
+        // The Cadmium Code button should only generate/display the Cadmium code bundle.
+        // Run Simulation is the only path that should call generateCSV(), which posts to
+        // http://localhost:8001/simulation-output and may build/run the executable.
+        window.showBottomSimulationOutput?.(
+            "Parser finished. Cadmium code generated. Simulation was not run.\n\n" +
+            JSON.stringify(codeResult, null, 2)
+        );
+
+        return codeResult;
     }
 
 
@@ -414,6 +515,16 @@ export class ConversionManager {
     // DEVSMap_to_Cadmium_Parser module, then sends the resulting Cadmium code
     // to the Cadmium_Builder module (which will build and simulate the Cadmium 
     // code).  Then, logs the resulting simulation output to the browser console.
+    async runCadmiumSimulation() {
+        return await this.previewSimulationOutput();
+    }
+
+
+    async runSimulation() {
+        return await this.previewSimulationOutput();
+    }
+
+
     async previewSimulationOutput() {
         console.log("NORMAL RUN path");
         const logDEVSMap = false;

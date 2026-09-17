@@ -1,0 +1,29 @@
+{
+  "counter_couple": {
+    "x": {},
+    "y": {},
+    "components": [
+      {
+        "model": "counter",
+        "id": "counter_model"
+      },
+      {
+        "model": "generator_bool",
+        "id": "direction_generator"
+      }
+    ],
+    "eic": [],
+    "eoc": [],
+    "ic": [
+      {
+        "port_from": "bool_out",
+        "port_to": "direction_in",
+        "component_from": "direction_generator",
+        "component_to": "counter_model"
+      }
+    ]
+  },
+  "include_sets": [
+    "default_sets.json"
+  ]
+}

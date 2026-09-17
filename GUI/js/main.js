@@ -6,8 +6,83 @@ import { exportGraphImage } from './image-utils.js';
 
 import { ConversionManager } from './conversions.js';
 import { shortcuts } from './shortcuts.js';
-import { setupExperimentSidebar } from "./experiment-design.js";
+import { setupExperimentSidebar, setSimulationOutputButtons } from "./experiment-design.js";
 
+window.customDataTypes = window.customDataTypes || [];
+
+document.addEventListener("DOMContentLoaded", () => {
+  setSimulationOutputButtons();
+});
+
+function repairLoadedUserObjects(graph) {
+    const model = graph.getModel();
+
+    function xmlObjectToPlain(obj) {
+        if (!obj) return obj;
+
+        if (obj.nodeType === 1) {
+            const out = {};
+
+            for (let i = 0; i < obj.attributes.length; i++) {
+                const attr = obj.attributes[i];
+                if (attr.name !== "as") {
+                    out[attr.name] = attr.value;
+                }
+            }
+
+            for (let i = 0; i < obj.children.length; i++) {
+                const child = obj.children[i];
+                const key = child.getAttribute("as") || child.tagName;
+
+                if (child.tagName === "Array") {
+                    out[key] = Array.from(child.children).map(grandchild => {
+                        if (grandchild.tagName === "add") {
+                            return grandchild.getAttribute("value");
+                        }
+                        return xmlObjectToPlain(grandchild);
+                    });
+                } else {
+                    out[key] = xmlObjectToPlain(child);
+                }
+            }
+
+            return out;
+        }
+
+        return obj;
+    }
+
+    function walk(cell) {
+        if (!cell) return;
+
+        if (cell.value && cell.value.nodeType === 1) {
+            const valueNode = cell.value;
+            const userObjectNode = Array.from(valueNode.children || [])
+                .find(ch => ch.getAttribute?.("as") === "userObject");
+
+            if (userObjectNode) {
+                cell.userObject = xmlObjectToPlain(userObjectNode);
+            }
+        }
+
+        const childCount = model.getChildCount(cell);
+        for (let i = 0; i < childCount; i++) {
+            walk(model.getChildAt(cell, i));
+        }
+    }
+
+    walk(model.getRoot());
+}
+function getAvailableTypes() {
+    return [
+        "int",
+        "double",
+        "bool",
+        "char",
+        "string",
+        ...window.customDataTypes.map(t => t.name)
+    ];
+}
 const markDirty = () => {
     window.autosaveGraphNow?.();
 };
@@ -53,6 +128,7 @@ function setupBottomPanelResizer() {
     });
 }
 
+
 function main(container) {
     // Check browser compatibility
     if (!mxClient.isBrowserSupported()) {
@@ -97,14 +173,13 @@ function main(container) {
         const gc = document.getElementById("graphContainer");
         const target = evt.target;
 
-        if (!gc || !target || !target.closest("#graphContainer ")) return;
+        if (!gc || !target || !target.closest("#graphContainer")) return;
 
         if (up) {
             graph.zoomIn();
         } else {
             graph.zoomOut();
         }
-        evt.preventDefault();
     });
 
 
@@ -123,6 +198,13 @@ function main(container) {
 
     mxCell.prototype.isCoupledModel = function () {
         return this.userObject?.elementType?.toLowerCase() === "coupledmodel";
+    };
+
+    mxCell.prototype.isExperimentalFrame = function () {
+        return (
+            this.userObject?.elementType?.toLowerCase() === "experimentalframe" ||
+            this.isExperimentalFrame === true
+        );
     };
 
     mxCell.prototype.getInputPorts = function () {
@@ -485,7 +567,168 @@ function main(container) {
         markDirty();
     }
 
+    function openAddDatatypeDialog() {
 
+        const overlay = document.createElement("div");
+        overlay.style.position = "fixed";
+        overlay.style.inset = "0";
+        overlay.style.background = "rgba(0,0,0,0.35)";
+        overlay.style.display = "flex";
+        overlay.style.justifyContent = "center";
+        overlay.style.alignItems = "center";
+        overlay.style.zIndex = "9999";
+
+        const box = document.createElement("div");
+        box.style.background = "white";
+        box.style.padding = "20px";
+        box.style.borderRadius = "8px";
+        box.style.width = "550px";
+
+        box.innerHTML = `
+            <h3>Create Datatype</h3>
+
+            <label>Datatype Name</label><br>
+            <input id="datatypeNameInput"
+                type="text"
+                style="width:100%;margin-bottom:12px;"
+                placeholder="name"><br>
+
+            <div id="datatypeFields"></div>
+
+            <button id="addFieldBtn">Add Field</button>
+            <hr>
+
+            <button id="saveDatatypeBtn">Save Datatype</button>
+            <button id="cancelDatatypeBtn">Cancel</button>
+        `;
+
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        const fieldsDiv = box.querySelector("#datatypeFields");
+
+        function addFieldRow() {
+
+            const row = document.createElement("div");
+            row.style.display = "flex";
+            row.style.gap = "5px";
+            row.style.marginBottom = "6px";
+
+            const kindSelect = document.createElement("select");
+
+            ["member", "container"].forEach(k => {
+                const opt = document.createElement("option");
+                opt.value = k;
+                opt.textContent = k;
+                kindSelect.appendChild(opt);
+            });
+
+            const nameInput = document.createElement("input");
+            nameInput.placeholder = "field name";
+            nameInput.style.flex = "1";
+
+            const typeSelect = document.createElement("select");
+
+            getAvailableTypes().forEach(type => {
+                const opt = document.createElement("option");
+                opt.value = type;
+                opt.textContent = type;
+                typeSelect.appendChild(opt);
+            });
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "-";
+            deleteBtn.onclick = () => row.remove();
+
+            function updateRow() {
+
+                if (kindSelect.value === "container") {
+                    nameInput.value = "container";
+                    nameInput.disabled = true;
+                } else {
+                    if (nameInput.value === "container") {
+                        nameInput.value = "";
+                    }
+                    nameInput.disabled = false;
+                }
+            }
+
+            kindSelect.onchange = updateRow;
+            updateRow();
+
+            row.appendChild(kindSelect);
+            row.appendChild(nameInput);
+            row.appendChild(typeSelect);
+            row.appendChild(deleteBtn);
+
+            fieldsDiv.appendChild(row);
+        }
+
+        addFieldRow();
+        addFieldRow();
+        addFieldRow();
+
+        box.querySelector("#addFieldBtn").onclick = addFieldRow;
+
+        box.querySelector("#cancelDatatypeBtn").onclick = () => {
+            document.body.removeChild(overlay);
+        };
+
+        box.querySelector("#saveDatatypeBtn").onclick = () => {
+
+            const datatypeName =
+                box.querySelector("#datatypeNameInput").value.trim();
+
+            if (!datatypeName) {
+                alert("Datatype name required.");
+                return;
+            }
+
+            const fields = [];
+
+            [...fieldsDiv.children].forEach(row => {
+
+                const kind = row.children[0].value;
+                const name = row.children[1].value.trim();
+                const type = row.children[2].value;
+
+                if (!name) return;
+
+                if (kind === "member") {
+
+                    fields.push({
+                        kind: "member",
+                        name,
+                        type
+                    });
+
+                } else {
+
+                    fields.push({
+                        kind: "container",
+                        containerType: "vector",
+                        elementType: type
+                    });
+
+                }
+            });
+
+            window.customDataTypes.push({
+                name: datatypeName,
+                fields
+            });
+
+            console.log("Datatype added:",
+                window.customDataTypes[
+                    window.customDataTypes.length - 1
+                ]);
+
+            document.body.removeChild(overlay);
+
+            populateRightPalette();
+            markDirty();
+        };
+    }
     function getSelectedCellUserObject() {
         const selected = graph.getSelectionCells();
 
@@ -533,7 +776,15 @@ function main(container) {
     function rebuildCoupledComponentsFromChildren(coupledCell) {
     if (!coupledCell || !coupledCell.userObject || !coupledCell.userObject.json?.model) return;
 
-    const children = graph.getModel().getChildCells(coupledCell) || [];
+    const children = (graph.model.getChildCells(coupledCell) || []).filter(c =>
+        c &&
+        c.userObject &&
+        (
+            c.userObject.elementType === "atomicModel" ||
+            c.userObject.elementType === "coupledModel"
+        ) &&
+        c.userObject.unique_id
+    );
 
     const components = children
         .filter(c =>
@@ -613,24 +864,33 @@ function main(container) {
             userObj.unique_id = idInput.value.trim();
             syncParentCoupledComponentMetadata(cell);
             updateLabel();
+            markDirty();
         });
 
         modelInput.addEventListener("input", () => {
             userObj.model_name = modelInput.value.trim();
             syncParentCoupledComponentMetadata(cell);
             updateLabel();
+            markDirty();
         });
 
         function updateLabel() {
             const id = userObj.unique_id || "";
             const model = userObj.model_name || "";
+
             graph.getModel().beginUpdate();
             try {
                 cell.value = `${id} : ${model}`;
+
+                // Force mxGraph to recognize metadata change
+                graph.getModel().setValue(cell, cell.value);
+
                 graph.refresh(cell);
             } finally {
                 graph.getModel().endUpdate();
             }
+
+            markDirty();
         }
     }
 
@@ -713,7 +973,8 @@ function main(container) {
         });
 
         const dataTypeSelect = document.createElement('select');
-        ['int', 'double', 'bool', 'string'].forEach(dt => {
+
+        getAvailableTypes().forEach(dt => {
             const option = document.createElement('option');
             option.value = dt;
             option.textContent = dt;
@@ -804,12 +1065,14 @@ function main(container) {
 
             // DataType Dropdown
             const typeSelect = document.createElement("select");
-            ["double", "int", "bool", "string"].forEach(type => {
+
+            getAvailableTypes().forEach(type => {
                 const option = document.createElement("option");
                 option.value = type;
                 option.textContent = type;
                 typeSelect.appendChild(option);
             });
+
             typeSelect.value = data_type;
 
             typeSelect.addEventListener("change", () => {
@@ -817,10 +1080,20 @@ function main(container) {
                 varObj.data_type = data_type;
 
                 // Reset init_state for new type
-                if (data_type === "bool") varObj.init_state = false;
-                else if (data_type === "double") varObj.init_state = 0.0;
-                else if (data_type === "int") varObj.init_state = 0;
-                else varObj.init_state = "";
+                if (data_type === "bool") {
+                    varObj.init_state = false;
+                } else if (data_type === "double") {
+                    varObj.init_state = 0.0;
+                } else if (data_type === "int") {
+                    varObj.init_state = 0;
+                } else if (data_type === "char") {
+                    varObj.init_state = "";
+                } else if (data_type === "string") {
+                    varObj.init_state = "";
+                } else {
+                    // custom struct or container type
+                    varObj.init_state = "";
+                }
 
                 renderValueInput();
                 markDirty();
@@ -973,6 +1246,38 @@ function main(container) {
     }
 
 
+
+    function formatUpdateBlockForTextarea(updates) {
+        if (updates == null) return "";
+
+        if (typeof updates === "string") {
+            return updates;
+        }
+
+        if (typeof updates === "object") {
+            return Object.entries(updates)
+                .map(([key, value]) => `"${key}": ${JSON.stringify(String(value))}`)
+                .join(",\n");
+        }
+
+        return String(updates);
+    }
+
+    function parseTextareaUpdateBlock(text) {
+        const trimmed = String(text ?? "").trim();
+
+        if (!trimmed) {
+            return {};
+        }
+
+        try {
+            return JSON.parse(`{${trimmed.replace(/,\s*$/, "")}}`);
+        } catch (err) {
+            // Keep the raw text instead of losing user edits if it is temporarily invalid.
+            return text;
+        }
+    }
+
     function renderDeltaInt(cell) {
         if (!cell || !cell.userObject || !cell.userObject.json?.model) return;
 
@@ -1020,7 +1325,7 @@ function main(container) {
             condInput.style.width = "80%";
             if (isOtherwise) condInput.disabled = true;
 
-            condInput.addEventListener("input", () => {
+            condInput.addEventListener("focusout", () => {
                 const newCond = condInput.value.trim();
                 if (!newCond || newCond === condition) return;
                 if (deltaIntObj[newCond]) return;
@@ -1049,29 +1354,15 @@ function main(container) {
             // Textarea for updates (without outer braces and without leading whitespace)
             const textArea = document.createElement("textarea");
 
-            let innerText = JSON.stringify(updates, null, 2);
+            textArea.value = formatUpdateBlockForTextarea(updates);
 
-            // remove outer { }
-            innerText = innerText.replace(/^\{\s*|\s*\}$/g, "");
-
-            // remove leading whitespace from each line
-            innerText = innerText
-                .split("\n")
-                .map(line => line.trimStart())
-                .join("\n");
-
-            textArea.value = innerText.trim();
             textArea.rows = 3;
             textArea.style.width = "100%";
 
             textArea.addEventListener("input", () => {
-                try {
-                    const wrappedJSON = `{${textArea.value.trim()}}`;
-                    deltaIntObj[condInput.value] = JSON.parse(wrappedJSON);
-                    markDirty();
-                } catch (e) {
-                    // ignore invalid JSON while typing
-                }
+                updates = parseTextareaUpdateBlock(textArea.value);
+                deltaIntObj[condInput.value] = updates;
+                markDirty();
             });
 
             wrapper.appendChild(textArea);
@@ -1129,7 +1420,7 @@ function main(container) {
             condInput.style.width = "80%";
             if (isOtherwise) condInput.disabled = true;
 
-            condInput.addEventListener("input", () => {
+            condInput.addEventListener("focusout", () => {
                 const newCond = condInput.value.trim();
                 if (!newCond || newCond === condition) return;
                 if (deltaExtObj[newCond]) return;
@@ -1158,29 +1449,15 @@ function main(container) {
             // Textarea for updates (without outer braces and without leading whitespace)
             const textArea = document.createElement("textarea");
 
-            let innerText = JSON.stringify(updates, null, 2);
+            textArea.value = formatUpdateBlockForTextarea(updates);
 
-            // remove outer { }
-            innerText = innerText.replace(/^\{\s*|\s*\}$/g, "");
-
-            // remove leading whitespace from each line
-            innerText = innerText
-                .split("\n")
-                .map(line => line.trimStart())
-                .join("\n");
-
-            textArea.value = innerText.trim();
             textArea.rows = 3;
             textArea.style.width = "100%";
 
             textArea.addEventListener("input", () => {
-                try {
-                    const wrappedJSON = `{${textArea.value.trim()}}`;
-                    deltaExtObj[condInput.value] = JSON.parse(wrappedJSON);
-                    markDirty();
-                } catch (e) {
-                    // ignore invalid JSON while typing
-                }
+                updates = parseTextareaUpdateBlock(textArea.value);
+                deltaExtObj[condInput.value] = updates;
+                markDirty();
             });
 
             wrapper.appendChild(textArea);
@@ -1267,31 +1544,16 @@ function main(container) {
             // Textarea for updates (without outer braces and without leading whitespace)
             const textArea = document.createElement("textarea");
 
-            let innerText = JSON.stringify(updates, null, 2);
+            textArea.value = formatUpdateBlockForTextarea(updates);
 
-            // remove outer { }
-            innerText = innerText.replace(/^\{\s*|\s*\}$/g, "");
-
-            // remove leading whitespace from each line
-            innerText = innerText
-                .split("\n")
-                .map(line => line.trimStart())
-                .join("\n");
-
-            textArea.value = innerText.trim();
             textArea.rows = 3;
             textArea.style.width = "100%";
 
             textArea.addEventListener("input", () => {
-                try {
-                    const wrappedJSON = `{${textArea.value.trim()}}`;
-                    lambdaObj[condInput.value] = JSON.parse(wrappedJSON);
-                    markDirty();
-                } catch (e) {
-                    // ignore invalid JSON while typing
-                }
+                updates = parseTextareaUpdateBlock(textArea.value);
+                lambdaObj[condInput.value] = updates;
+                markDirty();
             });
-
             wrapper.appendChild(textArea);
             container.appendChild(wrapper);
         }
@@ -1426,9 +1688,9 @@ function main(container) {
 
         // Helper: get cell object by unique_id
         function getCellById(id) {
-            if (id === cell.userObject.unique_id) return cell;
-            return children.find(c => c.userObject.unique_id === id);
-        }
+            if (id === cell.userObject?.unique_id) return cell;
+            return children.find(c => c.userObject?.unique_id === id);
+        }       
 
         // Populate componentFrom and componentTo
         function populateComponents() {
@@ -1438,10 +1700,10 @@ function main(container) {
 
             if (type === "EIC") {
                 addOptions(compFrom, [cell.userObject.unique_id]);
-                addOptions(compTo, children.map(c => c.userObject.unique_id));
+                addOptions(compTo, children.map(c => c.userObject?.unique_id).filter(Boolean));
             } else if (type === "IC") {
-                addOptions(compFrom, children.map(c => c.userObject.unique_id));
-                addOptions(compTo, children.map(c => c.userObject.unique_id));
+                addOptions(compFrom, children.map(c => c.userObject?.unique_id).filter(Boolean));
+                addOptions(compTo, children.map(c => c.userObject?.unique_id).filter(Boolean));
             } else if (type === "EOC") {
                 addOptions(compFrom, children.map(c => c.userObject.unique_id));
                 addOptions(compTo, [cell.userObject.unique_id]);
@@ -1562,23 +1824,91 @@ function main(container) {
     /////////////////////////////////////////////////////////////////////////////
 
     const conversionManager = new ConversionManager(graph);
+    window.autosaveGraphNow = () => {
+        autosaveGraph(conversionManager);
+        saveUiStateForCurrentCategory(graph);
+    };
 
     const CONFIRM_NEW_GRAPH_MESSAGE = "Are you sure you would like to start a new graph? This will delete the current graph.";
 
-    document.getElementById('newBtn').addEventListener('click', () => deleteAllCells(graph, CONFIRM_NEW_GRAPH_MESSAGE));
-    document.getElementById('loadBtn').addEventListener('click', () => conversionManager.loadGraphXML());
-    document.getElementById('saveBtn').addEventListener('click', () => conversionManager.saveGraphXML());
+    const bindButton = (id, handler) => {
+        const el = document.getElementById(id);
+        if (!el) {
+            return;
+        }
+        el.addEventListener('click', handler);
+    };
 
-    document.getElementById('screenshotPngBtn').addEventListener('click', () => exportGraphImage(graph, "png"));
-    //document.getElementById('screenshotJpgBtn').addEventListener('click', () => exportGraphImage(graph, "jpg"));
+    bindButton('newBtn', () => deleteAllCells(graph, CONFIRM_NEW_GRAPH_MESSAGE));
+    bindButton('loadBtn', () => conversionManager.loadGraphXML());
+    bindButton('saveBtn', () => conversionManager.saveGraphXML());
 
-    //document.getElementById("viewTraceBtn").addEventListener("click", () => conversionManager.viewTrace());
+    bindButton('screenshotPngBtn', () => exportGraphImage(graph, "png"));
+ 
+    bindButton("previewDEVSMapBtn", () => conversionManager.previewDEVSMap());
 
-    //document.getElementById("previewGraphXMLBtn").addEventListener("click", () => conversionManager.previewGraphXML());
-    //document.getElementById("previewUserObjectsBtn").addEventListener("click", () => conversionManager.previewUserObjects());
-    document.getElementById("previewDEVSMapBtn").addEventListener("click", () => conversionManager.previewDEVSMap());
-    document.getElementById("previewCodeBtn").addEventListener("click", () => conversionManager.previewCadmiumCode());
-    document.getElementById("previewSimulationOutputBtn").addEventListener("click", () => conversionManager.previewSimulationOutput());
+    const getSimulationTime = () => {
+        const timeInput =
+            document.getElementById("simulationTimeInput") ||
+            document.getElementById("experimentSimulationTimeInput") ||
+            document.querySelector("input[name='simulationTime']") ||
+            document.querySelector("input[data-role='simulation-time']");
+
+        if (!timeInput || timeInput.value === "") return undefined;
+
+        const simulationTime = Number(timeInput.value);
+        return Number.isFinite(simulationTime) ? simulationTime : undefined;
+    };
+
+    const buildCadmiumCode = async () => {
+        // Prefer true build/write methods if conversions.js provides them.
+        // Fall back to previewCadmiumCode because this is the method that exists in the current/old main wiring.
+        // In this project, previewCadmiumCode is the Cadmium-code generation entry point; the button label is what changed.
+        if (typeof conversionManager.buildCadmiumCode === "function") {
+            await conversionManager.buildCadmiumCode(graph);
+        } else if (typeof conversionManager.writeCadmiumCode === "function") {
+            await conversionManager.writeCadmiumCode(graph);
+        } else if (typeof conversionManager.generateCadmiumCode === "function") {
+            await conversionManager.generateCadmiumCode(graph);
+        } else if (typeof conversionManager.createCadmiumCode === "function") {
+            await conversionManager.createCadmiumCode(graph);
+        } else if (typeof conversionManager.previewCadmiumCode === "function") {
+            await conversionManager.previewCadmiumCode();
+        } else if (typeof window.buildCadmiumCode === "function") {
+            await window.buildCadmiumCode({ graph, conversionManager });
+        } else if (typeof window.previewCadmiumCode === "function") {
+            await window.previewCadmiumCode({ graph, conversionManager });
+        } else {
+            console.warn("No Cadmium code generation function found on ConversionManager or window", conversionManager);
+            alert("Cadmium Code is present, but no Cadmium code generation function was found.");
+        }
+    };
+
+    const runCadmiumSimulation = async () => {
+        const simulationTime = getSimulationTime();
+
+        // Prefer true run methods if conversions.js provides them.
+        // Fall back to previewSimulationOutput because this is the existing simulation-output entry point.
+        if (typeof conversionManager.runSimulation === "function") {
+            await conversionManager.runSimulation(simulationTime, graph);
+        } else if (typeof conversionManager.runCadmiumSimulation === "function") {
+            await conversionManager.runCadmiumSimulation(simulationTime, graph);
+        } else if (typeof conversionManager.simulateCadmium === "function") {
+            await conversionManager.simulateCadmium(simulationTime, graph);
+        } else if (typeof conversionManager.previewSimulationOutput === "function") {
+            await conversionManager.previewSimulationOutput(simulationTime);
+        } else if (typeof window.runSimulation === "function") {
+            await window.runSimulation({ graph, conversionManager, simulationTime });
+        } else if (typeof window.previewSimulationOutput === "function") {
+            await window.previewSimulationOutput({ graph, conversionManager, simulationTime });
+        } else {
+            console.warn("No simulation runner function found on ConversionManager or window", conversionManager);
+            alert("Run Simulation is present, but no simulation runner function was found.");
+        }
+    };
+
+    bindButton("previewCodeBtn", buildCadmiumCode);
+    bindButton("previewSimulationOutputBtn", runCadmiumSimulation);
 
 
     /////////////////////////////////////////////////////////////////////////////
@@ -1613,6 +1943,7 @@ function main(container) {
     toolbar.addItem('Zoom to Fit', null, () => graph.fit(25));
     toolbar.addItem('Couple Models', null, () => groupAsCoupledModel(graph));
     toolbar.addItem('Decouple', null, ungroupCells);
+    toolbar.addItem('Add Datatype', null, openAddDatatypeDialog);
 
 
 
@@ -2099,11 +2430,70 @@ function main(container) {
     }
 
     window.populateRightPalette = populateRightPalette;
+    
+    /////////////////////////////////////////////////////////////////////////////
+    ///////// Right Tab Switching
+    /////////////////////////////////////////////////////////////////////////////
+
+function setRightTab(tabName, options = {}) {
+    const previousTab = window.currentRightTab || "properties";
+    const alreadyOnTab = previousTab === tabName;
+
+    window.currentRightTab = tabName;
+
+    const { render = true, save = true } = options;
+    const propertiesTab = document.getElementById("tabPropertiesBtn");
+    const experimentTab = document.getElementById("tabExperimentBtn");
+    const propertiesPane = document.getElementById("propertiesTab");
+    const experimentPane = document.getElementById("experimentTab");
+
+    if (!propertiesTab || !experimentTab) {
+        console.log("propertiesTabBtn =", document.getElementById("tabPropertiesBtn"));
+        console.log("experimentTabBtn =", document.getElementById("tabExperimentBtn"));
+        console.warn("Right tab buttons missing");
+        return;
+    }
+
+    if (tabName === "properties") {
+        propertiesTab.classList.add("active");
+        experimentTab.classList.remove("active");
+
+        if (render && !alreadyOnTab) {
+            populateRightPalette();
+        }
+    } else {
+        experimentTab.classList.add("active");
+        propertiesTab.classList.remove("active");
+        if (render && typeof setupExperimentSidebar === "function") {
+            setupExperimentSidebar(graph || window.currentGraph);
+        }
+    }
+
+    if (save) {
+        saveUiStateForCurrentCategory(graph || window.currentGraph);
+    }
+}
+
+    window.setRightTab = setRightTab;
+
+    document.getElementById("tabPropertiesBtn")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("Properties tab clicked");
+        setRightTab("properties", { render: true, save: true });
+    });
+
+    document.getElementById("tabExperimentBtn")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("Experiment tab clicked");
+        setRightTab("experiment", { render: true, save: true });
+    });
 
     graph.getSelectionModel().addListener(mxEvent.CHANGE, () => {
         const cell = graph.getSelectionCell();
 
-        const propsActive = document.getElementById("propertiesTab") ?.classList.contains("active");
+        const propsActive = document.getElementById("tabPropertiesBtn") ?.classList.contains("active");
 
         // Show properties when the Properties tab is currently active
         if (!propsActive) {
@@ -2193,34 +2583,51 @@ function setupRightPaletteResizer() {
     });
 }
 
+/////////////////////////////////////////////////////////////////////////////
+///////// Autosave + UI State
+/////////////////////////////////////////////////////////////////////////////
 
+window.currentRightTab = window.currentRightTab || "properties";
 
 function autosaveGraph(cm) {
-  try {
-    const xml = cm.getGraphXML();
-    localStorage.setItem("devs_graph_xml", xml);
-  } catch (err) {
-    console.error("Autosave failed:", err);
-  }
+    try {
+        const xml = cm.getGraphXML();
+
+        const category = window.currentCategory || "default";
+
+        // Save graph XML per category
+        localStorage.setItem(
+            `devs_graph_xml_${category}`,
+            xml
+        );
+
+    } catch (err) {
+        console.error("Autosave failed:", err);
+    }
 }
 
 
-function saveUiState(graph) {
-  try {
-    const selected = graph.getSelectionCell();
-    const selectedId = selected ? selected.getId() : "";
-    localStorage.setItem("devs_selected_cell_id", selectedId);
+function saveUiStateForCurrentCategory(graph) {
+    try {
+        const category = getCurrentCategory();
 
-    const propsTab = document.getElementById("propertiesTab");
-    const currentTab =
-      propsTab && propsTab.classList.contains("active") ? "properties" : "experiment";
+        const selected = graph?.getSelectionCell?.();
+        const selectedId = selected ? selected.getId() : "";
 
-    localStorage.setItem("devs_right_tab", currentTab);
-  } catch (err) {
-    console.error("UI state save failed:", err);
-  }
+        const currentTab = window.currentRightTab || "properties";
+
+        localStorage.setItem(
+            getUiStorageKey(category),
+            JSON.stringify({
+                selectedId,
+                rightTab: currentTab
+            })
+        );
+
+    } catch (err) {
+        console.error("UI state save failed:", err);
+    }
 }
-
 
 function getCategoryList() {
     const saved = localStorage.getItem("devs_category_list");
@@ -2295,9 +2702,7 @@ function autosaveGraphForCategory(cm, graph, category) {
         const selected = graph.getSelectionCell();
         const selectedId = selected ? selected.getId() : "";
 
-        const propsTab = document.getElementById("propertiesTab");
-        const currentTab =
-            propsTab && propsTab.classList.contains("active") ? "properties" : "experiment";
+        const currentTab = window.currentRightTab || "properties";
 
         localStorage.setItem(
             getUiStorageKey(category),
@@ -2329,10 +2734,12 @@ function restoreGraphForCategory(graph, category) {
         graph.getModel().beginUpdate();
         try {
             codec.decode(xmlDoc.documentElement, graph.getModel());
+            repairLoadedUserObjects(graph);
+    
         } finally {
             graph.getModel().endUpdate();
         }
-
+        graph.refresh();
         console.log(`Graph restored for ${category}`);
     } catch (err) {
         console.error(`Failed to restore graph for ${category}:`, err);
@@ -2347,6 +2754,13 @@ function restoreUiStateForCategory(graph, category) {
         const uiState = JSON.parse(raw);
         if (!uiState) return;
 
+        if (uiState.rightTab && window.setRightTab) {
+            window.setRightTab(uiState.rightTab, {
+                render: true,
+                save: false
+            });
+        }
+
         if (uiState.selectedId) {
             const model = graph.getModel();
             const cell = model.getCell(uiState.selectedId);
@@ -2354,14 +2768,11 @@ function restoreUiStateForCategory(graph, category) {
                 graph.setSelectionCell(cell);
             }
         }
-
-        if (uiState.rightTab && window.setRightTab) {
-            window.setRightTab(uiState.rightTab);
-        }
     } catch (err) {
         console.error("Failed to restore UI state for category:", err);
     }
 }
+
 
 
 // Wait for DOM to be ready before initializing
@@ -2471,6 +2882,6 @@ document.getElementById("deleteCategoryBtn").addEventListener("click", () => {
         window.autosaveGraphNow();
     });
 
-    setupExperimentSidebar(graph);
+ 
 
 });
