@@ -113,10 +113,10 @@ def sort_json_files(json_data):
         'atomic_models': [],    # 1 or more atomic models
         'coupled_models': [],   # 1 or more coupled models
         'experiment': None,     # exactly 1 experiment file
-        'definition': [],
+        'definition': [],       # 0 or more definition files
         'init_states': [],      # 1 or more init_state files
-        'param': None,
-        'metadata': None
+        'param': None,          # exactly 0 or exactly 1 param files
+        'metadata': None        # exactly 0 or exactly 1 metadata files
     }
 
     for key, value in json_data.items():
