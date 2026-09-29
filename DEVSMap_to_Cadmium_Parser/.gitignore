@@ -19,3 +19,5 @@ __pycache__/
 /output/main/CMakeFiles
 /output/build_esp.sh
 
+#Ignore the generated JSON files
+JSON/*
