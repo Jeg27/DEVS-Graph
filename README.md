@@ -1,14 +1,6 @@
 # DEVS-Graph GUI
 
-A graphical tool for modelling, simulation, validation, and experimentation of Discrete-Event System Specification (DEVS) models.
-
----
-
-## Repository
-
-https://github.com/murf85/DEVS_Graph_GUI_DataTypes
-Improvements on:
-https://github.com/ucheeaa/DEVS-Graph-GUI
+A graphical tool for the modelling, simulation, validation, and experimentation of Discrete-Event System Specification (DEVS) models.
 
 ---
 
@@ -79,10 +71,10 @@ Ensure the following are installed:
 - Modern browser (Chrome recommended)
 - g++ (C++ compiler)
 
-Install dependencies:
+Install Python dependencies by running the following command from the DEVS-Graph directory:
 
 ```
-pip install flask flask-cors
+python -m pip install -r requirements.txt
 ```
 
 ---
@@ -111,6 +103,7 @@ git checkout -b your_name_branch
 Run:
 
 ```
+source .venv/bin/activate
 python start_all.py
 ```
 
