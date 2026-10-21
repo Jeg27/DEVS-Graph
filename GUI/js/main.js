@@ -1943,7 +1943,7 @@ function main(container) {
     toolbar.addItem('Zoom to Fit', null, () => graph.fit(25));
     toolbar.addItem('Couple Models', null, () => groupAsCoupledModel(graph));
     toolbar.addItem('Decouple', null, ungroupCells);
-    toolbar.addItem('Add Datatype', null, openAddDatatypeDialog);
+    // toolbar.addItem('Add Datatype', null, openAddDatatypeDialog);
 
 
 
