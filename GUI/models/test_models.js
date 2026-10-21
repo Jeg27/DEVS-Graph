@@ -447,7 +447,11 @@ const genericItems = [
     height: 60,
     style: DEFAULT_STYLES.atomicModel
   },
+];
 
+const coupledTemplate = [
+  // DO NOT DELETE
+  // This is a reference for development of the tool
   {
     label: 'Generic Coupled',
     userObject: {
@@ -470,7 +474,7 @@ const genericItems = [
     height: 60,
     style: DEFAULT_STYLES.coupledModel
   }
-];
+]
 
 const counterItems = [
   ...generalItems,
