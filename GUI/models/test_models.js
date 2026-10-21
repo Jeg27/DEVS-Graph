@@ -477,6 +477,6 @@ const coupledTemplate = [
 ]
 
 const counterItems = [
-  ...generalItems,
-  ...genericItems
+  ...genericItems,
+  ...generalItems
 ];
