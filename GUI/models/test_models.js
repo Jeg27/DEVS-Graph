@@ -268,58 +268,6 @@ const generalItems = [
   },
   */
 
-  /*
-  {
-    label: 'testAtomic',
-    userObject: {
-      elementType: 'atomicModel',
-      model_name: 'name',
-      unique_id: 'id',
-      json: {
-        model: {
-          x: {},
-          y: {},
-          s: {},
-          delta_int: {},
-          delta_ext: {},
-          delta_con: {},
-          lambda: {},
-          ta: { "otherwise": "sigma" }
-        },
-        include_sets: ["default_sets.json"],
-        parameters: {}
-      },
-    },
-    width: 120,
-    height: 60,
-    style: DEFAULT_STYLES.atomicModel
-  },
-  */
-
-  /*
-  {
-    label: 'testCoupled',
-    userObject: {
-      elementType: 'coupledModel',
-      model_name: 'name',
-      unique_id: 'id',
-      json: {
-        model: {
-          x: {},
-          y: {},
-          components: [],
-          eic: [],
-          eoc: [],
-          ic: []
-        },
-        include_sets: ["default_sets.json"],
-      },
-    },
-    width: 120,
-    height: 60,
-    style: DEFAULT_STYLES.coupledModel
-  },
-  */
 
   // =========================
   // NEW COUNTER EXPERIMENT ITEMS
