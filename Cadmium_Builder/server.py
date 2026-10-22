@@ -84,5 +84,4 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 # -----------------------------
 if __name__ == "__main__":
     server = ThreadedHTTPServer(("localhost", 8001), CadmiumHandler)
-    print("Cadmium_Builder server running on http://localhost:8001")
     server.serve_forever()

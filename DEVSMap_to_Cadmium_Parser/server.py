@@ -84,5 +84,4 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 # -----------------------------
 if __name__ == "__main__":
     server = ThreadedHTTPServer(("localhost", 8000), ParserHandler)
-    print("Parser server running on http://localhost:8000")
     server.serve_forever()

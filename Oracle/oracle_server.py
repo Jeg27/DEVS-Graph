@@ -5,7 +5,6 @@ import os
 
 import platform
 
-print("STARTING ORACLE SERVER...")
 app = Flask(__name__)
 CORS(app)
 
