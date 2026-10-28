@@ -218,7 +218,7 @@ const generalItems = [
     style: DEFAULT_STYLES.atomicModel
   },
 
-  /*
+  
   {
     label: 'light_1 : traffic_light',
     userObject: {
@@ -266,7 +266,7 @@ const generalItems = [
     height: 60,
     style: DEFAULT_STYLES.atomicModel
   },
-  */
+  
 
 
   // =========================
