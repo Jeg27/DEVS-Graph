@@ -24,51 +24,55 @@ const generalItems = [
   },
   */
 
-  /*
+
   {
-    label: 'counter_system',
+    label: 'light_1 : traffic_light',
     userObject: {
-      elementType: 'coupledModel',
-      model_name: 'counter_system',
-      unique_id: 'counter_system',
+      elementType: 'atomicModel',
+      model_name: 'traffic_light',
+      unique_id: 'light_1',
       json: {
         model: {
           x: {},
           y: {
-            count: 'int'
+            colour_out: 'string',
           },
-          components: {},
-          eic: [],
-          eoc: [
-            {
-              port_from: 'count_out',
-              port_to: 'count',
-              component_from: 'counter_model'
-            }
-          ],
-          ic: [
-            {
-              port_from: 'bool_out',
-              port_to: 'direction_in',
-              component_to: 'counter_model',
-              component_from: 'direction_generator'
+          s: {
+            sigma: { data_type: "double", init_state: "5.0" },
+            colour: { data_type: "string", init_state: '"RED"' },
+          },
+          delta_int: {
+            'colour == "RED"': {
+              "colour": '"GREEN"',
+              "sigma": "7"
             },
-            {
-              port_from: 'int_out',
-              port_to: 'increment_in',
-              component_to: 'counter_model',
-              component_from: 'increment_generator'
+            'colour == "GREEN"': {
+              "colour": '"YELLOW"',
+              "sigma": "3"
+            },
+            "otherwise": {
+              "colour": '"RED"',
+              "sigma": "10"
             }
-          ]
+          },
+          delta_ext: { "otherwise": {} },
+          delta_con: {},
+          lambda: {
+            "otherwise": {
+              "colour_out": "colour"
+            }
+          },
+          ta: { "otherwise": "sigma" }
         },
         include_sets: ["default_sets.json"],
+        parameters: {}
       },
     },
     width: 120,
     height: 60,
-    style: DEFAULT_STYLES.coupledModel
+    style: DEFAULT_STYLES.atomicModel
   },
-  */
+
 
   {
     label: 'counter_model : counter',
@@ -134,12 +138,54 @@ const generalItems = [
     style: DEFAULT_STYLES.atomicModel
   },
 
-  /*
+
   {
-    label: 'increment_generator : generator_int',
+    label: 'step_generator : int_generator',
     userObject: {
       elementType: 'atomicModel',
-      model_name: 'generator_int',
+      model_name: 'int_generator',
+      unique_id: 'step_generator',
+      json: {
+        model: {
+          x: {},
+          y: {
+            step_out: 'int'
+          },
+          s: {
+            sigma: { data_type: 'double', init_state: '2' },
+            step: { data_type: 'int', init_state: '5' }
+          },
+          delta_int: {
+            "otherwise": {}
+          },
+          delta_ext: {
+            "otherwise": {}
+          },
+          delta_con: {},
+          lambda: {
+            "otherwise": {
+              "step_out": "step"
+            }
+          },
+          ta: {
+            "otherwise": "sigma"
+          }
+        },
+        include_sets: ["default_sets.json"],
+        parameters: {}
+      },
+    },
+    width: 120,
+    height: 60,
+    style: DEFAULT_STYLES.atomicModel
+  },
+
+  /*
+  {
+    label: 'increment_generator : random_int_generator',
+    userObject: {
+      elementType: 'atomicModel',
+      model_name: 'random_int_generator',
       unique_id: 'increment_generator',
       json: {
         model: {
@@ -180,10 +226,10 @@ const generalItems = [
   */
 
   {
-    label: 'direction_generator : generator_bool',
+    label: 'direction_generator : bool_generator',
     userObject: {
       elementType: 'atomicModel',
-      model_name: 'generator_bool',
+      model_name: 'bool_generator',
       unique_id: 'direction_generator',
       json: {
         model: {
@@ -218,102 +264,12 @@ const generalItems = [
     style: DEFAULT_STYLES.atomicModel
   },
 
-  
-  {
-    label: 'light_1 : traffic_light',
-    userObject: {
-      elementType: 'atomicModel',
-      model_name: 'traffic_light',
-      unique_id: 'light_1',
-      json: {
-        model: {
-          x: {},
-          y: {
-            colour_out: 'string',
-          },
-          s: {
-            sigma: { data_type: "double", init_state: "5.0" },
-            colour: { data_type: "string", init_state: '"RED"' },
-          },
-          delta_int: {
-            'colour == "RED"': {
-              "colour": '"GREEN"',
-              "sigma": "7"
-            },
-            'colour == "GREEN"': {
-              "colour": '"YELLOW"',
-              "sigma": "3"
-            },
-            "otherwise": {
-              "colour": '"RED"',
-              "sigma": "10"
-            }
-          },
-          delta_ext: { "otherwise": {} },
-          delta_con: {},
-          lambda: {
-            "otherwise": {
-              "colour_out": "colour"
-            }
-          },
-          ta: { "otherwise": "sigma" }
-        },
-        include_sets: ["default_sets.json"],
-        parameters: {}
-      },
-    },
-    width: 120,
-    height: 60,
-    style: DEFAULT_STYLES.atomicModel
-  },
-  
-
 
   // =========================
   // NEW COUNTER EXPERIMENT ITEMS
   // =========================
 
-  {
-    label: 'step_generator : step_generator',
-    userObject: {
-      elementType: 'atomicModel',
-      model_name: 'step_generator',
-      unique_id: 'step_gen',
-      json: {
-        model: {
-          x: {},
-          y: {
-            step_out: 'int'
-          },
-          s: {
-            sigma: { data_type: 'double', init_state: '2' },
-            step: { data_type: 'int', init_state: '5' }
-          },
-          delta_int: {
-            "otherwise": {}
-          },
-          delta_ext: {
-            "otherwise": {}
-          },
-          delta_con: {},
-          lambda: {
-            "otherwise": {
-              "step_out": "step"
-            }
-          },
-          ta: {
-            "otherwise": "sigma"
-          }
-        },
-        include_sets: ["default_sets.json"],
-        parameters: {}
-      },
-    },
-    width: 120,
-    height: 60,
-    style: DEFAULT_STYLES.atomicModel
-  },
-
+  /*
   {
     label: 'exponential_addition_generator : exponential_addition',
     userObject: {
@@ -359,6 +315,8 @@ const generalItems = [
     height: 60,
     style: DEFAULT_STYLES.atomicModel
   }
+  */
+
 ];
 
 const genericItems = [
