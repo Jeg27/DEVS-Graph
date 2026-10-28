@@ -100,11 +100,10 @@ const generalItems = [
               "count": "count + increment",
               "sigma": "inf"
             },
-            "countUp == false": {
+            "otherwise": {
               "count": "count - increment",
               "sigma": "inf"
-            },
-            "otherwise": {}
+            }
           },
           delta_ext: {
             "increment_in.bagSize() != 0 && direction_in.bagSize() == 0": {
