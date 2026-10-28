@@ -138,54 +138,12 @@ const generalItems = [
     style: DEFAULT_STYLES.atomicModel
   },
 
-
+  
   {
-    label: 'step_generator : int_generator',
+    label: 'increment_generator : generator_int',
     userObject: {
       elementType: 'atomicModel',
-      model_name: 'int_generator',
-      unique_id: 'step_generator',
-      json: {
-        model: {
-          x: {},
-          y: {
-            step_out: 'int'
-          },
-          s: {
-            sigma: { data_type: 'double', init_state: '2' },
-            step: { data_type: 'int', init_state: '5' }
-          },
-          delta_int: {
-            "otherwise": {}
-          },
-          delta_ext: {
-            "otherwise": {}
-          },
-          delta_con: {},
-          lambda: {
-            "otherwise": {
-              "step_out": "step"
-            }
-          },
-          ta: {
-            "otherwise": "sigma"
-          }
-        },
-        include_sets: ["default_sets.json"],
-        parameters: {}
-      },
-    },
-    width: 120,
-    height: 60,
-    style: DEFAULT_STYLES.atomicModel
-  },
-
-  /*
-  {
-    label: 'increment_generator : random_int_generator',
-    userObject: {
-      elementType: 'atomicModel',
-      model_name: 'random_int_generator',
+      model_name: 'generator_int',
       unique_id: 'increment_generator',
       json: {
         model: {
@@ -223,13 +181,13 @@ const generalItems = [
     height: 60,
     style: DEFAULT_STYLES.atomicModel
   },
-  */
+  
 
   {
-    label: 'direction_generator : bool_generator',
+    label: 'direction_generator : generator_bool',
     userObject: {
       elementType: 'atomicModel',
-      model_name: 'bool_generator',
+      model_name: 'generator_bool',
       unique_id: 'direction_generator',
       json: {
         model: {
@@ -269,7 +227,47 @@ const generalItems = [
   // NEW COUNTER EXPERIMENT ITEMS
   // =========================
 
-  /*
+  {
+    label: 'step_generator : step_generator',
+    userObject: {
+      elementType: 'atomicModel',
+      model_name: 'step_generator',
+      unique_id: 'step_gen',
+      json: {
+        model: {
+          x: {},
+          y: {
+            step_out: 'int'
+          },
+          s: {
+            sigma: { data_type: 'double', init_state: '2' },
+            step: { data_type: 'int', init_state: '5' }
+          },
+          delta_int: {
+            "otherwise": {}
+          },
+          delta_ext: {
+            "otherwise": {}
+          },
+          delta_con: {},
+          lambda: {
+            "otherwise": {
+              "step_out": "step"
+            }
+          },
+          ta: {
+            "otherwise": "sigma"
+          }
+        },
+        include_sets: ["default_sets.json"],
+        parameters: {}
+      },
+    },
+    width: 120,
+    height: 60,
+    style: DEFAULT_STYLES.atomicModel
+  },
+
   {
     label: 'exponential_addition_generator : exponential_addition',
     userObject: {
@@ -315,8 +313,6 @@ const generalItems = [
     height: 60,
     style: DEFAULT_STYLES.atomicModel
   }
-  */
-
 ];
 
 const genericItems = [
