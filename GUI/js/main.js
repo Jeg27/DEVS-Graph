@@ -845,6 +845,9 @@ function main(container) {
         idInput.value = userObj.unique_id;
         idInput.classList.add("property-input");
 
+        const idRow = document.createElement("div");
+        idRow.append(idLabel, idInput);
+
         // Model Name
         const modelLabel = document.createElement("label");
         modelLabel.textContent = "Model Name:";
@@ -853,10 +856,11 @@ function main(container) {
         modelInput.value = userObj.model_name;
         modelInput.classList.add("property-input");
 
-        wrapper.appendChild(idLabel);
-        wrapper.appendChild(idInput);
-        wrapper.appendChild(modelLabel);
-        wrapper.appendChild(modelInput);
+        const modelRow = document.createElement("div");
+        modelRow.append(modelLabel, modelInput);
+
+        wrapper.appendChild(idRow);
+        wrapper.appendChild(modelRow);
         container.appendChild(wrapper);
 
         // Update events
