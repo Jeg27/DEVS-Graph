@@ -423,25 +423,39 @@ def generate_output_function(state_name, lambda_func, list_of_state_variables):
 
 def generate_time_advance_function(state_name, ta, list_of_state_variables):
     '''
-    #TODO INCOMPLETE IMPLEMENTATION: This only works for one case (return state.variable)
-    NOTE: list_of_state_variables is unused, but would be used once this is complete
-    
     Returns the time advance function for the atomic model being generated.
+
+    Each value in ta is an expression (for example "sigma", "0", "inf" or
+    "sigma * 2"): state variables are prefixed with "state." and inf is
+    converted to C++. With more than one branch, every guard gets its own
+    return statement and the "otherwise" branch is the final return.
 
     Args:
         state_name (str):                       The name of the atomic model's state object.
         ta (dict):                              The DEVSMap dictionary data for the time advance function,
                                                 given by model_name['ta']
-        list_of_state_variables (dict_items):   The list of state variables of the atomic model, returned by 
-                                                atomic_model['s'].items()
+        list_of_state_variables (list):         The names of the atomic model's state variables, from
+                                                list(atomic_model['s'].keys())
     '''
+    if 'otherwise' not in ta:
+        raise ValueError(state_name + ": the time advance function needs an 'otherwise' branch")
+    for guard, value in ta.items():
+        if not isinstance(value, str):
+            raise ValueError(state_name + ": time advance values must be expressions such as \"sigma\"; "
+                             "got " + repr(value) + " for " + repr(guard))
+
     time_advance_function = '\t[[nodiscard]] double timeAdvance(const ' + state_name + '& state) const override {\n'
-    
-    if len(ta) == 1:
-        time_advance_function += '\t\treturn state.' + ta['otherwise'] + ';\n'
-    
+
+    guards = [guard for guard in ta if guard != 'otherwise']
+    for i, guard in enumerate(guards):
+        keyword = 'if' if i == 0 else 'else if'
+        time_advance_function += '\t\t' + keyword + ' (' + prefix_states(guard, list_of_state_variables) + ') {\n'
+        time_advance_function += '\t\t\treturn ' + prefix_states(ta[guard], list_of_state_variables) + ';\n'
+        time_advance_function += '\t\t}\n'
+    time_advance_function += '\t\treturn ' + prefix_states(ta['otherwise'], list_of_state_variables) + ';\n'
+
     time_advance_function += '\t}\n\n'
-    return time_advance_function
+    return replace_inf(time_advance_function)
 
 
 
