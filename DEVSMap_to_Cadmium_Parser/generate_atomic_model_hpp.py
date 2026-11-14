@@ -370,6 +370,8 @@ def generate_external_transition(state_name, delta_ext, list_of_state_variables)
             line = re.sub(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\.bagSize\(\) != 0', r'!\1->empty()', line)
             # replaces "variable_name.bagSize() == 0" with variable_name->empty()
             line = re.sub(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\.bagSize\(\) == 0', r'\1->empty()', line)
+            # replaces any other "x.bagSize()" with "x->size()"
+            line = re.sub(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\.bagSize\(\)', r'\1->size()', line)
             external_transition_body += line            
         # if the line is an instruction, we are making changes based on getting the last value from the bag
         else:
