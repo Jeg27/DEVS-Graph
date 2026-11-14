@@ -380,7 +380,7 @@ def generate_external_transition(state_name, delta_ext, list_of_state_variables)
     external_transition_function += external_transition_body    
     
     external_transition_function += '\t}\n\n'
-    return external_transition_function
+    return replace_inf(external_transition_function)
 
 
 def generate_output_function(state_name, lambda_func, list_of_state_variables):

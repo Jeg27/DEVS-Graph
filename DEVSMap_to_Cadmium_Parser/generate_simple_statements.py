@@ -1,3 +1,4 @@
+import re
 # TODO top of the file comments
 
 def include_limits():
@@ -51,19 +52,16 @@ def infinity():
 
 def replace_inf(text):
     '''
-    Replaces all instances of '(inf)' and ' inf;' in the text parameter with the 
-    appropriate C++ syntax for infinity. Note that this function uses extra specific 
-    strings to avoid destroying state variables that may include the substring "inf".
+    Replaces every stand-alone 'inf' in the text parameter with the appropriate
+    C++ syntax for infinity. Only the whole word is replaced, so names that
+    contain "inf" (such as info or infected) are left alone, as are member
+    accesses (x.inf) and the string literal "inf".
 
     Args:
-        text (str):     The text to search and replace 'inf' with 
+        text (str):     The text to search and replace 'inf' with
                         'std::numeric_limits<double>::infinity()'
     '''
-    # replace inf in an atomic model constructor
-    text = text.replace("(inf)", "(" + infinity() + ")")
-    # replace for other cases, such as in the body of an internal transition function
-    text = text.replace(" inf;", " " + infinity() + ";")
-    return text
+    return re.sub(r'(?<![\w."])inf(?![\w"])', infinity(), text)
 
 
 
